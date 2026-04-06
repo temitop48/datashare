@@ -9,6 +9,8 @@ type PageProps = {
   }>;
 };
 
+export const dynamic ="force-dynamic";
+
 export default async function PublicProfilePage({ params }: PageProps) {
   const { ownerAddress } = await params;
   const profile = await getProfileByOwnerAddress(ownerAddress);

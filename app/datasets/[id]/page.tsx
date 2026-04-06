@@ -15,6 +15,8 @@ type PageProps = {
   }>;
 };
 
+export const dynamic ="force-dynamic";
+
 export default async function DatasetDetailsPage({ params }: PageProps) {
   const { id } = await params;
   const dataset = await getDatasetById(id);

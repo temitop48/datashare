@@ -4,8 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "build": "prisma generate && ext start",
     "lint": "next lint",
     "test:upload": "tsx scripts/test-upload.ts",
     "backfill:revisions": "tsx scripts/backfill-revisions.ts",
