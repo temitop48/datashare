@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Dataset {
+  id                String            @id @default(cuid())
+  title             String
+  description       String
+  chain             String
+  category          String
+  tags              String
+  version           String
+  blobName          String
+  fileSizeBytes     Int
+  checksum          String
+  ownerAddress      String
+  uploadedByAddress String?
+  isPublic          Boolean           @default(true)
+  downloadCount     Int               @default(0)
+  previewJson       String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @default(now()) @updatedAt
+
+  revisions         DatasetRevision[]
+  activities        DatasetActivity[]
+}
+
+model DatasetRevision {
+  id            String   @id @default(cuid())
+  datasetId     String
+  version       String
+  blobName      String
+  fileSizeBytes Int
+  checksum      String
+  previewJson   String?
+  createdAt     DateTime @default(now())
+  note          String?
+
+  dataset       Dataset  @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+}
+
+model DatasetActivity {
+  id            String   @id @default(cuid())
+  datasetId     String
+  action        String
+  actorAddress  String
+  metadata      String?
+  createdAt     DateTime @default(now())
+
+  dataset       Dataset  @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+}
+
+model UserProfile {
+  id             String   @id @default(cuid())
+  ownerAddress   String   @unique
+  displayName    String
+  bio            String?
+  avatarUrl      String?
+  website        String?
+  twitterHandle  String?
+  discordHandle  String?
+  contactEmail   String?
+  skills         String?
+  blobName       String
+  fileSizeBytes  Int
+  checksum       String
+  previewJson    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
+}

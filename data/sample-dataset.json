@@ -1,0 +1,11 @@
+{
+  "name": "Base Token Price History Demo",
+  "chain": "base",
+  "category": "token-price-history",
+  "version": "1.0.0",
+  "records": [
+    { "timestamp": "2026-03-20T00:00:00Z", "symbol": "ETH", "priceUsd": 3521.11 },
+    { "timestamp": "2026-03-21T00:00:00Z", "symbol": "ETH", "priceUsd": 3550.42 },
+    { "timestamp": "2026-03-22T00:00:00Z", "symbol": "ETH", "priceUsd": 3498.77 }
+  ]
+}
