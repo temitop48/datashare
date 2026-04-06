@@ -5,6 +5,9 @@ import StatsRow from "../components/StatsRow";
 import MyDatasetCard from "./MyDatasetCard";
 import TopNav from "../components/TopNav";
 
+
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   searchParams: Promise<{
     owner?: string;
@@ -19,6 +22,7 @@ const sectionStyle: React.CSSProperties = {
   marginBottom: "1.5rem",
   background: "linear-gradient(180deg, rgba(14, 24, 42, 0.9), rgba(11, 20, 38, 0.95))",
 };
+
 
 export default async function MyDatasetsPage({ searchParams }: PageProps) {
   const session = await getCurrentSession();

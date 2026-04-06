@@ -4,6 +4,8 @@ import SignOutButton from "../components/SignOutButton";
 import ProfilePageClient from "./ProfilePageClient";
 import TopNav from "../components/TopNav";
 
+export const dynamic = "force-dynamic";
+
 export default async function ProfilePage() {
   const session = await getCurrentSession();
 

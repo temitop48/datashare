@@ -6,11 +6,14 @@ import SignOutButton from "../components/SignOutButton";
 import StatsRow from "../components/StatsRow";
 import TopNav from "../components/TopNav";
 
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   searchParams: Promise<{
     visibility?: string;
   }>;
 };
+
 
 export default async function ManagePage({ searchParams }: PageProps) {
   const session = await getCurrentSession();

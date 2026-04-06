@@ -3,13 +3,15 @@ import { notFound } from "next/navigation";
 import { getProfileByOwnerAddress } from "@/lib/server/profiles";
 import TopNav from "../../components/TopNav";
 
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   params: Promise<{
     ownerAddress: string;
   }>;
 };
 
-export const dynamic ="force-dynamic";
+
 
 export default async function PublicProfilePage({ params }: PageProps) {
   const { ownerAddress } = await params;

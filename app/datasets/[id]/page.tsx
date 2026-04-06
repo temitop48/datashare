@@ -9,13 +9,14 @@ import {
 import TopNav from "../../components/TopNav";
 import CreatorIdentity from "../../components/CreatorIdentity";
 
+export const dynamic = "force-dynamic";
+
 type PageProps = {
   params: Promise<{
     id: string;
   }>;
 };
 
-export const dynamic ="force-dynamic";
 
 export default async function DatasetDetailsPage({ params }: PageProps) {
   const { id } = await params;

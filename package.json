@@ -3,15 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "prisma generate && ext start",
-    "lint": "next lint",
-    "test:upload": "tsx scripts/test-upload.ts",
-    "backfill:revisions": "tsx scripts/backfill-revisions.ts",
-    "backfill:checksums": "tsx scripts/backfill-checksums.ts",
-    "db:deploy": "prisma migrate deploy",
-    "db:generate": "prisma generate"
-  },
+  "dev": "next dev",
+  "build": "prisma generate && next build",
+  "start": "next start",
+  "lint": "next lint",
+  "postinstall": "prisma generate",
+  "test:upload": "tsx scripts/test-upload.ts",
+  "backfill:revisions": "tsx scripts/backfill-revisions.ts",
+  "backfill:checksums": "tsx scripts/backfill-checksums.ts",
+  "db:deploy": "prisma migrate deploy",
+  "db:generate": "prisma generate"
+},
   "dependencies": {
     "@aptos-labs/ts-sdk": "5.2.1",
     "@aptos-labs/wallet-adapter-react": "^8.3.2",
