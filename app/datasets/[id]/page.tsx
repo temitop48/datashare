@@ -149,7 +149,7 @@ export default async function DatasetDetailsPage({ params }: PageProps) {
           <p className="ds-note">No revisions found.</p>
         ) : (
           <div className="ds-grid">
-            {revisions.map((revision : any) => (
+            {revisions.map((revision: any) => (
               <div key={revision.id} className="ds-card-soft">
                 <div className="ds-kv">
                   <p><strong>Revision ID:</strong> {revision.id}</p>
