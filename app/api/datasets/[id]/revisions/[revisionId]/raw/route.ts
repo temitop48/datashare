@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getShelbyClient } from "@/lib/shelby";
 import { getCurrentSession } from "@/lib/server/session";
-import { incrementDownloadCount, canIncrementDownload } from "@/lib/server/download";
+import {
+  buildDownloadFingerprint,
+  recordDownload,
+  shouldCountDownload,
+} from "@/lib/server/download";
 
 export const runtime = "nodejs";
 
@@ -79,13 +83,25 @@ export async function GET(req: NextRequest, context: RouteContext) {
       throw new Error("Unsupported Shelby download response shape");
     }
 
-    const ip =
-      req.headers.get("x-forwarded-for") ||
-      req.headers.get("x-real-ip") ||
-      "unknown";
+    if (download && dataset.isPublic) {
+      const ip =
+        req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+        req.headers.get("x-real-ip") ||
+        "unknown";
 
-    if (dataset.isPublic && canIncrementDownload(ip, dataset.id)) {
-      incrementDownloadCount(dataset.id).catch(console.error);
+      const userAgent = req.headers.get("user-agent") || "unknown";
+
+      const fingerprint = buildDownloadFingerprint({
+        datasetId: dataset.id,
+        ip,
+        userAgent,
+      });
+
+      const shouldCount = await shouldCountDownload(dataset.id, fingerprint);
+
+      if (shouldCount) {
+        await recordDownload(dataset.id, fingerprint);
+      }
     }
 
     return new Response(result.readable, {
