@@ -1,34 +1,51 @@
+import crypto from "crypto";
 import { db } from "@/lib/db";
 
-const downloadCooldownMap = new Map<string, number>();
+const COOLDOWN_MS = 10_000;
 
-const COOLDOWN_MS = 10_000; // 10 seconds
-
-function getClientKey(ip: string, datasetId: string) {
-  return `${ip}:${datasetId}`;
+function hashFingerprint(input: string) {
+  return crypto.createHash("sha256").update(input).digest("hex");
 }
 
-export function canIncrementDownload(ip: string, datasetId: string) {
-  const key = getClientKey(ip, datasetId);
-  const now = Date.now();
-
-  const last = downloadCooldownMap.get(key);
-
-  if (!last || now - last > COOLDOWN_MS) {
-    downloadCooldownMap.set(key, now);
-    return true;
-  }
-
-  return false;
+export function buildDownloadFingerprint(input: {
+  datasetId: string;
+  ip: string;
+  userAgent: string;
+}) {
+  return hashFingerprint(`${input.datasetId}:${input.ip}:${input.userAgent}`);
 }
 
-export async function incrementDownloadCount(datasetId: string) {
-  await db.dataset.update({
-    where: { id: datasetId },
-    data: {
-      downloadCount: {
-        increment: 1,
+export async function shouldCountDownload(datasetId: string, fingerprint: string) {
+  const cutoff = new Date(Date.now() - COOLDOWN_MS);
+
+  const existing = await db.datasetDownloadEvent.findFirst({
+    where: {
+      datasetId,
+      fingerprint,
+      createdAt: {
+        gte: cutoff,
       },
     },
   });
+
+  return !existing;
+}
+
+export async function recordDownload(datasetId: string, fingerprint: string) {
+  await db.$transaction([
+    db.dataset.update({
+      where: { id: datasetId },
+      data: {
+        downloadCount: {
+          increment: 1,
+        },
+      },
+    }),
+    db.datasetDownloadEvent.create({
+      data: {
+        datasetId,
+        fingerprint,
+      },
+    }),
+  ]);
 }

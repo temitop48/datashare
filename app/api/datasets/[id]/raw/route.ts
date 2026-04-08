@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getShelbyClient } from "@/lib/shelby";
-import { canCurrentUserAccessDataset } from "@/lib/server/dataset-access";
-import { incrementDownloadCount, canIncrementDownload } from "@/lib/server/download";
+import { getCurrentSession } from "@/lib/server/session";
+import {
+  buildDownloadFingerprint,
+  recordDownload,
+  shouldCountDownload,
+} from "@/lib/server/download";
 
 export const runtime = "nodejs";
 
@@ -28,23 +32,30 @@ export async function GET(req: NextRequest, context: RouteContext) {
     const { id } = await context.params;
     const download = req.nextUrl.searchParams.get("download") === "1";
 
-    const access = await canCurrentUserAccessDataset(id);
+    const dataset = await db.dataset.findUnique({
+      where: { id },
+    });
 
-    if (access.reason === "not_found") {
+    if (!dataset) {
       return NextResponse.json(
         { error: "Dataset not found" },
         { status: 404 }
       );
     }
 
-    if (!access.allowed || !access.dataset) {
+    const session = await getCurrentSession();
+
+    const canAccess =
+      dataset.isPublic ||
+      (session?.ownerAddress &&
+        session.ownerAddress.toLowerCase() === dataset.ownerAddress.toLowerCase());
+
+    if (!canAccess) {
       return NextResponse.json(
-        { error: "Forbidden: you do not have access to this dataset" },
+        { error: "Forbidden" },
         { status: 403 }
       );
     }
-
-    const dataset = access.dataset;
 
     if (!dataset.blobName || dataset.blobName === "pending") {
       return NextResponse.json(
@@ -56,54 +67,50 @@ export async function GET(req: NextRequest, context: RouteContext) {
     const shelbyClient = await getShelbyClient();
 
     const result = await shelbyClient.download({
-      account: dataset.uploadedByAddress || dataset.ownerAddress,
+      account: dataset.ownerAddress,
       blobName: dataset.blobName,
     });
-
 
     if (!isShelbyBlobLike(result)) {
       throw new Error("Unsupported Shelby download response shape");
     }
 
-    await db.dataset.update({
-      where: { id: dataset.id },
-      data: {
-        downloadCount: {
-          increment: 1,
-        },
-      },
-    });
+    if (download && dataset.isPublic) {
+      const ip =
+        req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+        req.headers.get("x-real-ip") ||
+        "unknown";
 
+      const userAgent = req.headers.get("user-agent") || "unknown";
 
-    const ip =
-     req.headers.get("x-forwarded-for") ||
-     req.headers.get("x-real-ip") ||
-     "unknown";
+      const fingerprint = buildDownloadFingerprint({
+        datasetId: dataset.id,
+        ip,
+        userAgent,
+      });
 
-    if (dataset.isPublic && canIncrementDownload(ip, dataset.id)) {
-    incrementDownloadCount(dataset.id).catch(console.error);
+      const shouldCount = await shouldCountDownload(dataset.id, fingerprint);
+
+      if (shouldCount) {
+        await recordDownload(dataset.id, fingerprint);
+      }
     }
 
-
     return new Response(result.readable, {
-  status: 200,
-  headers: {
-    "Content-Type": "application/json",
-
-    // 🔥 CACHE BOOST
-    "Cache-Control": dataset.isPublic
-      ? "public, max-age=60, stale-while-revalidate=300"
-      : "no-store",
-
-    "Content-Disposition": download
-      ? `attachment; filename="${dataset.id}.json"`
-      : `inline; filename="${dataset.id}.json"`,
-
-    ...(typeof result.contentLength === "number"
-      ? { "Content-Length": String(result.contentLength) }
-      : {}),
-  },
-});
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": dataset.isPublic
+          ? "public, max-age=60, stale-while-revalidate=300"
+          : "no-store",
+        "Content-Disposition": download
+          ? `attachment; filename="${dataset.id}.json"`
+          : `inline; filename="${dataset.id}.json"`,
+        ...(typeof result.contentLength === "number"
+          ? { "Content-Length": String(result.contentLength) }
+          : {}),
+      },
+    });
   } catch (error: any) {
     console.error("Raw dataset fetch error:", error);
 

@@ -8,7 +8,7 @@ datasource db {
 }
 
 model Dataset {
-  id                String            @id @default(cuid())
+  id                String                @id @default(cuid())
   title             String
   description       String
   chain             String
@@ -20,20 +20,29 @@ model Dataset {
   checksum          String
   ownerAddress      String
   uploadedByAddress String?
-  isPublic          Boolean           @default(true)
-  downloadCount     Int               @default(0)
+  isPublic          Boolean               @default(true)
+  downloadCount     Int                   @default(0)
   previewJson       String?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @default(now()) @updatedAt
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @default(now()) @updatedAt
 
   revisions         DatasetRevision[]
   activities        DatasetActivity[]
+  downloads         DatasetDownloadEvent[]
 }
 
 model DatasetRevision {
   id            String   @id @default(cuid())
   datasetId     String
+
+  title         String
+  description   String
+  chain         String
+  category      String
+  tags          String
   version       String
+  isPublic      Boolean
+
   blobName      String
   fileSizeBytes Int
   checksum      String
@@ -46,13 +55,13 @@ model DatasetRevision {
 
 model DatasetActivity {
   id            String   @id @default(cuid())
-  datasetId     String
-  action        String
-  actorAddress  String
-  metadata      String?
-  createdAt     DateTime @default(now())
+  datasetId      String
+  action         String
+  actorAddress   String
+  metadata       String?
+  createdAt      DateTime @default(now())
 
-  dataset       Dataset  @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  dataset        Dataset  @relation(fields: [datasetId], references: [id], onDelete: Cascade)
 }
 
 model UserProfile {
@@ -72,4 +81,13 @@ model UserProfile {
   previewJson    String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @default(now()) @updatedAt
+}
+
+model DatasetDownloadEvent {
+  id             String   @id @default(cuid())
+  datasetId       String
+  fingerprint     String
+  createdAt       DateTime @default(now())
+
+  dataset         Dataset  @relation(fields: [datasetId], references: [id], onDelete: Cascade)
 }

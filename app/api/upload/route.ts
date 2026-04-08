@@ -47,6 +47,13 @@ export async function POST(req: NextRequest) {
       privateKey: new Ed25519PrivateKey(privateKey),
     });
 
+    const normalizedChain = chain.trim();
+    const normalizedCategory = category.trim();
+    const normalizedTitle = title.trim();
+    const normalizedDescription = description.trim();
+    const normalizedVersion = version.trim();
+    const normalizedTags = tags.map((tag: string) => tag.trim()).join(",");
+
     const prettyJson = JSON.stringify(data, null, 2);
     const blobData = Buffer.from(prettyJson);
     const checksum = sha256Hex(prettyJson);
@@ -59,12 +66,12 @@ export async function POST(req: NextRequest) {
 
     const tempDataset = await db.dataset.create({
       data: {
-        title: title.trim(),
-        description: description.trim(),
-        chain: chain.trim(),
-        category: category.trim(),
-        tags: tags.map((tag: string) => tag.trim()).join(","),
-        version: version.trim(),
+        title: normalizedTitle,
+        description: normalizedDescription,
+        chain: normalizedChain,
+        category: normalizedCategory,
+        tags: normalizedTags,
+        version: normalizedVersion,
         blobName: "pending",
         fileSizeBytes: blobData.length,
         checksum,
@@ -77,7 +84,7 @@ export async function POST(req: NextRequest) {
 
     tempDatasetId = tempDataset.id;
 
-    const blobName = `datasets/${chain.trim()}/${category.trim()}/${tempDataset.id}/data.json`;
+    const blobName = `datasets/${normalizedChain}/${normalizedCategory}/${tempDataset.id}/data.json`;
     const expirationMicros =
       (Date.now() + 1000 * 60 * 60 * 24 * 30) * 1000;
 
@@ -97,7 +104,13 @@ export async function POST(req: NextRequest) {
 
     await createDatasetRevision({
       datasetId: dataset.id,
+      title: dataset.title,
+      description: dataset.description,
+      chain: dataset.chain,
+      category: dataset.category,
+      tags: dataset.tags,
       version: dataset.version,
+      isPublic: dataset.isPublic,
       blobName: dataset.blobName,
       fileSizeBytes: dataset.fileSizeBytes,
       checksum: dataset.checksum,
@@ -105,16 +118,15 @@ export async function POST(req: NextRequest) {
       note: "Initial upload",
     });
 
-    // ✅ FIXED HERE
     await createActivityLog({
-  datasetId: dataset.id,
-  action: "CREATE",
-  actorAddress: session.ownerAddress,
-  metadata: {
-    version: dataset.version,
-    checksum: dataset.checksum,
-  },
-});
+      datasetId: dataset.id,
+      action: "CREATE",
+      actorAddress: session.ownerAddress,
+      metadata: {
+        version: dataset.version,
+        checksum: dataset.checksum,
+      },
+    });
 
     return NextResponse.json({
       success: true,

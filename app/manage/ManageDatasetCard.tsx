@@ -8,7 +8,13 @@ import DatasetQuickActions from "../components/DatasetQuickActions";
 
 type Revision = {
   id: string;
+  title: string;
+  description: string;
+  chain: string;
+  category: string;
+  tags: string;
   version: string;
+  isPublic: boolean;
   blobName: string;
   fileSizeBytes: number;
   previewJson?: string | null;

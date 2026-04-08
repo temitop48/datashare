@@ -43,7 +43,10 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
       );
     }
 
-    if (dataset.ownerAddress.toLowerCase() !== session.ownerAddress.toLowerCase()) {
+    if (
+      dataset.ownerAddress.toLowerCase() !==
+      session.ownerAddress.toLowerCase()
+    ) {
       return NextResponse.json(
         { error: "Forbidden: you do not own this dataset" },
         { status: 403 }
@@ -63,12 +66,16 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
     const blobData = Buffer.from(prettyJson);
     const checksum = sha256Hex(prettyJson);
 
-   if (checksum === dataset.checksum) {
-     return NextResponse.json(
-     { error: "New content matches the current dataset content. No update was made." },
-     { status: 400 }
+    if (checksum === dataset.checksum) {
+      return NextResponse.json(
+        {
+          error:
+            "New content matches the current dataset content. No update was made.",
+        },
+        { status: 400 }
       );
     }
+
     if (blobData.length > 2_000_000) {
       throw new Error("Dataset too large. Max size is 2MB for now.");
     }
@@ -87,42 +94,48 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
     });
 
     const updatedDataset = await db.dataset.update({
-    where: { id: dataset.id },
-    data: {
-    blobName: newBlobName,
-    fileSizeBytes: blobData.length,
-    checksum,
-    previewJson: prettyJson.slice(0, 1200),
-    ...(typeof body.version === "string"
-      ? { version: body.version.trim() }
-      : {}),
-     },
-   });
+      where: { id: dataset.id },
+      data: {
+        blobName: newBlobName,
+        fileSizeBytes: blobData.length,
+        checksum,
+        previewJson: prettyJson.slice(0, 1200),
+        ...(typeof body.version === "string"
+          ? { version: body.version.trim() }
+          : {}),
+      },
+    });
 
     const revisionNote =
-  typeof body.version === "string"
-    ? `Content replaced and version set to ${body.version.trim()}`
-    : "Content replaced";
+      typeof body.version === "string"
+        ? `Content replaced and version set to ${body.version.trim()}`
+        : "Content replaced";
 
-await createDatasetRevision({
-  datasetId: updatedDataset.id,
-  version: updatedDataset.version,
-  blobName: updatedDataset.blobName,
-  fileSizeBytes: updatedDataset.fileSizeBytes,
-  checksum: updatedDataset.checksum,
-  previewJson: updatedDataset.previewJson,
-  note: revisionNote,
-});
+    await createDatasetRevision({
+      datasetId: updatedDataset.id,
+      title: updatedDataset.title,
+      description: updatedDataset.description,
+      chain: updatedDataset.chain,
+      category: updatedDataset.category,
+      tags: updatedDataset.tags,
+      version: updatedDataset.version,
+      isPublic: updatedDataset.isPublic,
+      blobName: updatedDataset.blobName,
+      fileSizeBytes: updatedDataset.fileSizeBytes,
+      checksum: updatedDataset.checksum,
+      previewJson: updatedDataset.previewJson,
+      note: revisionNote,
+    });
 
-await createActivityLog({
-  datasetId: updatedDataset.id,
-  action: "REPLACE_CONTENT",
-  actorAddress: session.ownerAddress,
-  metadata: {
-    version: updatedDataset.version,
-    checksum: updatedDataset.checksum,
-  },
-});
+    await createActivityLog({
+      datasetId: updatedDataset.id,
+      action: "REPLACE_CONTENT",
+      actorAddress: session.ownerAddress,
+      metadata: {
+        version: updatedDataset.version,
+        checksum: updatedDataset.checksum,
+      },
+    });
 
     return NextResponse.json({
       success: true,

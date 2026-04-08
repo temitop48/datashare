@@ -19,7 +19,13 @@ async function main() {
     await prisma.datasetRevision.create({
       data: {
         datasetId: dataset.id,
+        title: dataset.title,
+        description: dataset.description,
+        chain: dataset.chain,
+        category: dataset.category,
+        tags: dataset.tags,
         version: dataset.version,
+        isPublic: dataset.isPublic,
         blobName: dataset.blobName,
         fileSizeBytes: dataset.fileSizeBytes,
         checksum: dataset.checksum,

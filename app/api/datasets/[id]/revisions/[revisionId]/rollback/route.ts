@@ -57,44 +57,54 @@ export async function POST(req: NextRequest, context: RouteContext) {
     }
 
     const updatedDataset = await db.dataset.update({
-  where: { id: dataset.id },
-  data: {
-    version: revision.version,
-    blobName: revision.blobName,
-    fileSizeBytes: revision.fileSizeBytes,
-    checksum: revision.checksum,
-    previewJson: revision.previewJson,
-  },
-});
+      where: { id: dataset.id },
+      data: {
+        title: revision.title,
+        description: revision.description,
+        chain: revision.chain,
+        category: revision.category,
+        tags: revision.tags,
+        version: revision.version,
+        isPublic: revision.isPublic,
+        blobName: revision.blobName,
+        fileSizeBytes: revision.fileSizeBytes,
+        checksum: revision.checksum,
+        previewJson: revision.previewJson,
+      },
+    });
 
-  await createDatasetRevision({
-  datasetId: updatedDataset.id,
-  version: updatedDataset.version,
-  blobName: updatedDataset.blobName,
-  fileSizeBytes: updatedDataset.fileSizeBytes,
-  checksum: updatedDataset.checksum,
-  previewJson: updatedDataset.previewJson,
-  note: `Rolled back to revision ${revision.id}`,
-  });
+    await createDatasetRevision({
+      datasetId: updatedDataset.id,
+      title: updatedDataset.title,
+      description: updatedDataset.description,
+      chain: updatedDataset.chain,
+      category: updatedDataset.category,
+      tags: updatedDataset.tags,
+      version: updatedDataset.version,
+      isPublic: updatedDataset.isPublic,
+      blobName: updatedDataset.blobName,
+      fileSizeBytes: updatedDataset.fileSizeBytes,
+      checksum: updatedDataset.checksum,
+      previewJson: updatedDataset.previewJson,
+      note: `Rolled back to revision ${revision.id}`,
+    });
 
-  await createActivityLog({
-  datasetId: updatedDataset.id,
-  action: "ROLLBACK",
-  actorAddress: session.ownerAddress,
-  metadata: {
-    toRevisionId: revision.id,
-    version: updatedDataset.version,
-    },
-  });
-  
+    await createActivityLog({
+      datasetId: updatedDataset.id,
+      action: "ROLLBACK",
+      actorAddress: session.ownerAddress,
+      metadata: {
+        toRevisionId: revision.id,
+        version: updatedDataset.version,
+      },
+    });
+
     return NextResponse.json({
       success: true,
       dataset: updatedDataset,
     });
   } catch (error: any) {
     console.error("Rollback error:", error);
-
-    
 
     return NextResponse.json(
       { error: error?.message || "Internal server error" },
